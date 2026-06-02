@@ -1,6 +1,7 @@
-# LJ-PME Surfactant on Water Slab Simulation Workflow
+# Surfactant on Water Slab Simulation Workflow
 
-This repository provides a signac-flow workflow designed to run slab simulations of surfactants on water surfaces. It was initialized from the water workflow in `LJ-PME_sharedWorkflow` and has been cleaned up for customization.
+This repository provides a signac-flow workflow designed to run slab simulations of surfactants on water surfaces. It was initialized from the water workflow in `LJ-PME_sharedWorkflow` and has been cleaned up and renamed for customization.
+
 
 ## Setup
 
