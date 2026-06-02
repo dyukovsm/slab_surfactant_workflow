@@ -1,0 +1,52 @@
+; Run control
+integrator               = {{integrator}}
+;tinit                    = 0
+dt                       = 0.001
+comm-mode                = Linear
+;nsteps                   = 5000000   ; 10 ns <-- with dt = 0.002
+nsteps                   = {{nsteps}}   
+nstcomm                  = {{output_control}}
+; Output control
+nstxout                  = {{output_control}} ; I had 50000 for long sims, default is arround 1000
+nstvout                  = {{output_control}}
+nstcalcenergy            = {{nstcalcenergy}} ; this is the exact sampling that goes into edr file, need to be more precise here: 100 default
+nstfout                  = 0
+nstlog                   = {{output_control}}
+nstenergy                = {{output_control}}
+nstxout-compressed       = 0
+; Neighborsearching and short-range nonbonded interactions
+cutoff-scheme            = verlet
+nstlist                  = {{nstlist}}; nstlist = 10 is default; nstlist = 0 means no cutoff
+pbc                      = xyz
+rlist                    = {{rcoulomb}}
+; Electrostatics
+coulombtype              = {{coulombtype}}
+coulomb-modifier         = {{coulomb_modifier}}
+rcoulomb                 = {{rcoulomb}}
+rcoulomb-switch          = {{rcoulomb_switch}}
+; van der Waals
+vdwtype                  = {{vdw_type}}
+vdw-modifier             = {{vdw_modifier}}
+rvdw                     = {{rvdw}}
+rvdw-switch              = {{rvdw_switch}}
+DispCorr                 = {{DispCorr}};no
+fourierspacing           = 0.12
+pme-order                = 4
+ewald-rtol               = 1e-04
+ewald-rtol-lj		     = 1e-03
+lj-pme-comb-rule	     = lorentz-berthelot
+ewald-geometry           = 3d 
+epsilon-surface          = 0
+
+; Temperature coupling
+tcoupl                   = {{tcouple}}
+tc-grps                  = system
+tau-t                    = 1.0
+ref-t                    = {{ref_t}};298.15
+
+;constraints              = all-bonds
+;constraint-algorithm     = lincs
+;lincs-order              = 6
+{{constraints_string}}{{constraints}}
+{{constraint_algorithm_string}}{{constraint_algorithm}}
+{{lincs_order_string}}{{lincs_order}};     for lincs debug: lincs_iter               = 4

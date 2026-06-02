@@ -1,0 +1,26 @@
+# Ignore all Signac workspaces wherever they appear
+**/workspace/
+**/.signac/
+**/signac_project_document.json
+
+# Ignore signac temporary files/logs
+*.log
+legend.txt
+
+# Ignore GROMACS raw and binary output files (except those inside coordinates/ or templates/ if trackable)
+*.gro
+*.top
+*.tpr
+*.trr
+*.xtc
+*.edr
+*.xvg
+*.ndx
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/

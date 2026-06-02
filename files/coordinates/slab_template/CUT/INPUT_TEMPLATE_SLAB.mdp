@@ -1,0 +1,51 @@
+; Run control
+integrator               = md
+;tinit                    = 0
+dt                       = 0.001
+comm-mode                = Linear
+nsteps                   = 50000 ; 10000000   
+nstcomm                  = 5000
+; Output control
+nstxout                  = 5000 ; I had 50000 for long sims, default is arround 1000
+nstvout                  = 5000
+nstcalcenergy            = 100 ; this is the exact sampling that goes into edr file, need to be more precise here: 100 default
+nstfout                  = 0
+nstlog                   = 5000
+nstenergy                = 5000
+nstxout-compressed       = 0
+; Neighborsearching and short-range nonbonded interactions
+cutoff-scheme            = verlet
+nstlist                  = 10; nstlist = 10 is default; nstlist = 0 means no cutoff
+pbc                      = xyz
+rlist                    = 2.0
+; Electrostatics
+coulombtype              = PME
+coulomb-modifier         = None
+rcoulomb                 = 2.0
+rcoulomb-switch          = 0.0
+; van der Waals
+vdwtype                  = Cut-off
+vdw-modifier             = None
+rvdw                     = 2.0
+rvdw-switch              = 0.0
+DispCorr                 = No;no
+fourierspacing           = 0.12
+pme-order                = 4
+ewald-rtol               = 1e-04
+ewald-rtol-lj		     = 1e-03
+lj-pme-comb-rule	     = lorentz-berthelot
+ewald-geometry           = 3d 
+epsilon-surface          = 0
+
+; Temperature coupling
+tcoupl                   = nose-hoover
+tc-grps                  = system
+tau-t                    = 1.0
+ref-t                    = 450;298.15
+
+;constraints              = all-bonds
+;constraint-algorithm     = lincs
+;lincs-order              = 6
+;whatever
+;whatever
+;whatever;     for lincs debug: lincs_iter               = 4
