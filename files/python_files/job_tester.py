@@ -125,7 +125,7 @@ def inits_written(job):
 @FlowProject.label
 def mdps_written(job):
     with(job):
-        check_these_files = return_file_with_extensions(file_names=[names.NAME_TEMP_RAMP_START, names.NAME_TEMP_RAMP_STOP,
+        check_these_files = return_file_with_extensions(file_names=[names.NAME_EQ_NVT,
                                                                     names.NAME_EQ_SURFTEN,
                                                                     names.NAME_PRO_SURFTEN],extension_list = ['.mdp'])
         return test_existence_simple(job,check_these_files)
@@ -138,56 +138,24 @@ def build_input_starter(job):
         return starter_bool
     
 
-# equilibrated slabs copies.
-
-
-##################################################################################
-
-# TEMP_RAMP_START -> TEMP_RAMP_STOP -> EQ_SURFTEN -> PRO_SURFTEN
-    
-##################################################################################
-
-@FlowProject.label
-def build_surfTen_nvt_done(job):
-    with(job):
-        bool_job = False
-        files_to_check = return_file_with_extensions(
-            file_names=[f'{names.NAME_ELONGATED}'],
-            extension_list=['.gro']
-        )
-        bool_job = test_existence_simple(job,files_to_check)
-        return bool_job
-    
-##################################################################################
-
 @FlowProject.label
 def eq_nvt_post_em_files_present(job):
     with(job):
         bool_job = False
         files_to_check = return_file_with_extensions(
-            file_names=[f'{names.NAME_TEMP_RAMP_START}'],
+            file_names=[f'{names.NAME_EQ_NVT}'],
             extension_list=extension_list_of_common_files
         )
         bool_job = test_existence_simple(job,files_to_check)
         return bool_job
-    
-    
-@FlowProject.label
-def temp_ramp_start_done(job):
-    with(job):
-        bool_job = look_in_file(job,[f"{names.NAME_TEMP_RAMP_START}.log"],"Finished",check_for_not=True,check_for_not_str=['Received the TERM', 'Received the INT'])
-        return bool_job
-    
-    
-##################################################################################
+
 
 @FlowProject.label
-def temp_ramp_stop_done(job):
+def eq_nvt_post_em_done(job):
     with(job):
-        bool_job = look_in_file(job,[f"{names.NAME_TEMP_RAMP_STOP}.log"],"Finished",check_for_not=True,check_for_not_str=['Received the TERM', 'Received the INT'])
+        bool_job = look_in_file(job,[f"{names.NAME_EQ_NVT}.log"],"Finished",check_for_not=True,check_for_not_str=['Received the TERM', 'Received the INT'])
         return bool_job
     
-##################################################################################
 
 @FlowProject.label
 def build_surfTen_nvt_done(job):
@@ -200,33 +168,23 @@ def build_surfTen_nvt_done(job):
         bool_job = test_existence_simple(job,files_to_check)
         return bool_job
     
-##################################################################################
-
 
 @FlowProject.label
 def eq_nvt_surften_done(job):
     with(job):
-        
         last_key_oneliner = list(names.EQ_SURFTEN_CHUNK_TO_STARTING_GRO_FILE.keys())[-1]
         bool_job = look_in_file(job,[f"{names.EQ_SURFTEN_CHUNK_TO_STARTING_GRO_FILE[last_key_oneliner]}.log"],"Finished",check_for_not=True,check_for_not_str=['Received the TERM', 'Received the INT'])
         return bool_job
         
           
-##################################################################################
-
-
 @FlowProject.label
 def pro_nvt_surften_done(job):
     with(job):
-        
         last_key_oneliner = list(names.PRO_SURFTEN_CHUNK_TO_STARTING_GRO_FILE.keys())[-1]
         bool_job = look_in_file(job,[f"{names.PRO_SURFTEN_CHUNK_TO_STARTING_GRO_FILE[last_key_oneliner]}.log"],"Finished",check_for_not=True,check_for_not_str=['Received the TERM', 'Received the INT'])
         return bool_job
     
     
-##################################################################################
-
-
 @FlowProject.label
 def data_collected(job):
     test_passed = False
@@ -238,5 +196,6 @@ def data_collected(job):
                 test_passed = True
                 
     return test_passed
+
 
 
