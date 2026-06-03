@@ -36,6 +36,11 @@ PRINT_MY_NODE = 'echo -e "Hello World\nHello World upcomming hostname"; hostname
 WATER_STANDARD_RENAME = 'WAT'
 
 
+# Global user-configurable simulation parameters
+TEMPERATURE         = 400           # Target temperature in K
+R_CUT               = 3.5           # Cut-off distance in nm
+CUT_TYPE            = 'Cut-off'     # Always use Cut-off
+
 # Steps count for production and equilibration (can be adjusted for testing vs production)
 MID_EQ_STEPS        = int(1000)     # testing steps (production: 2000000)
 LONG_EQ_STEPS       = int(1000)     # testing steps (production: 20000000)
@@ -49,16 +54,11 @@ FAST_CALC           = int(100)
 EQ_CHUNK_COUNT = names.NAME_EQ_CHUNK_COUNT
 PRO_CHUNK_COUNT = names.NAME_PRO_CHUNK_COUNT
 
-PME_CUBELENGTH_Z = 12.0
-PME_CUBELENGTH_XY = 5.75
-PME_CUBELENGTH_Z_FINAL = 24.0
-
 CUT_CUBELENGTH_Z = 14.0
 CUT_CUBELENGTH_XY = 8.1
 CUT_CUBELENGTH_Z_FINAL = 50.0
 
 N_MOLECULES_CUT = int(27500) 
-N_MOLECULES_PME = int(11750) 
 GMX_PREFIX = names.GMX_PREFIX
 
 current_directory = os.getcwd()
@@ -74,24 +74,12 @@ class Custom_environment(DefaultSlurmEnvironment):
 @FlowProject.post(job_tester.mdps_written)
 @FlowProject.operation(directives={ "np": BUILD_CORES,  "ngpu": 0, "memory": MAX_MEM, "walltime": SHORT_WAIT})
 def BUILD_INPUT(job):
-    long_range_option = job.sp.cut_type
-    rcut = job.sp.r_cut
-
-    if "Cut-off" in long_range_option:
-        starting_z_len = CUT_CUBELENGTH_Z
-        starting_xy_len = CUT_CUBELENGTH_XY
-        starting_n_molecules = N_MOLECULES_CUT
-    elif "PME" in long_range_option:
-        starting_z_len = PME_CUBELENGTH_Z
-        starting_xy_len = PME_CUBELENGTH_XY
-        starting_n_molecules = N_MOLECULES_PME
-      
     with job:
         # Load water coordinates and set rigid molecule properties
         water = mb.load(f'{PROJECT_FILES_DIR}/{XYZ_DIR}/SPCE.mol2')
         water.name = 'WAT'
         
-        starting_box = mb.fill_box(compound=water, n_compounds=starting_n_molecules, box=[starting_xy_len, starting_xy_len, starting_z_len])
+        starting_box = mb.fill_box(compound=water, n_compounds=N_MOLECULES_CUT, box=[CUT_CUBELENGTH_XY, CUT_CUBELENGTH_XY, CUT_CUBELENGTH_Z])
         wat_ff_xml = forcefield_utilities.GMSOFFs().load_xml(f'{PROJECT_FILES_DIR}/{XML_DIR}/SPCE_GMSO.xml').to_gmso_ff()
         
         gmso_starting_box = from_mbuild(starting_box)
@@ -118,17 +106,17 @@ def BUILD_INPUT(job):
         'output_control' : SLOW_OUTPUT,
         'nstcalcenergy' : FAST_CALC,
         'nstlist' : 10,
-        'rcoulomb' : rcut,
+        'rcoulomb' : R_CUT,
         'coulombtype' : 'PME',
         'coulomb_modifier' : 'None',
         'rcoulomb_switch' : 0.0,
-        'vdw_type' : long_range_option,
+        'vdw_type' : CUT_TYPE,
         'vdw_modifier' : 'None',
-        'rvdw' : rcut,
+        'rvdw' : R_CUT,
         'rvdw_switch' : 0.0,
         'DispCorr' : 'No',
         'tcouple' : 'nose-hoover',
-        'ref_t' : 450 + 1/3*(job.sp.temperature - 450)
+        'ref_t' : 350 + 1/3*(TEMPERATURE - 350)
     }
     job_templates.simple_mdp_writer(job, mdp_name=f'{names.NAME_TEMP_RAMP_START}.mdp', parameters=parameters, constraints=None, templates_dir=f'{PROJECT_FILES_DIR}/mdp/', template_name='NVT_template_generic.mdp')
 
@@ -137,7 +125,7 @@ def BUILD_INPUT(job):
         'nsteps' : MID_EQ_STEPS,
         'output_control' : SLOW_OUTPUT,
         'nstcalcenergy' : FAST_CALC,
-        'ref_t' : 450 + 2/3*(job.sp.temperature - 450)
+        'ref_t' : 350 + 2/3*(TEMPERATURE - 350)
     })
     job_templates.simple_mdp_writer(job, mdp_name=f'{names.NAME_TEMP_RAMP_STOP}.mdp', parameters=parameters, constraints=None, templates_dir=f'{PROJECT_FILES_DIR}/mdp/', template_name='NVT_template_generic.mdp')
 
@@ -146,7 +134,7 @@ def BUILD_INPUT(job):
         'nsteps' : LONG_EQ_STEPS,
         'output_control' : SLOW_OUTPUT,
         'nstcalcenergy' : FAST_CALC,
-        'ref_t' : job.sp.temperature 
+        'ref_t' : TEMPERATURE 
     })
     job_templates.simple_mdp_writer(job, mdp_name=f'{names.NAME_EQ_SURFTEN}.mdp', parameters=parameters, constraints=None, templates_dir=f'{PROJECT_FILES_DIR}/mdp/', template_name='NVT_template_generic.mdp')
 
@@ -155,7 +143,7 @@ def BUILD_INPUT(job):
         'nsteps' : chunked_pro,
         'output_control' : FAST_OUTPUT,
         'nstcalcenergy' : FAST_CALC,
-        'ref_t' : job.sp.temperature 
+        'ref_t' : TEMPERATURE 
     })
     job_templates.simple_mdp_writer(job, mdp_name=f'{names.NAME_PRO_SURFTEN}.mdp', parameters=parameters, constraints=None, templates_dir=f'{PROJECT_FILES_DIR}/mdp/', template_name='NVT_template_generic.mdp')
 
@@ -166,12 +154,7 @@ def BUILD_INPUT(job):
 @FlowProject.operation(directives={ "np": BUILD_CORES,  "ngpu": 1, "memory": MAX_MEM, "walltime": SHORT_WAIT})
 def BUILD_INPUT_FROM_TEMPLATE(job):
     with(job):
-
-        if 'Cut-off' in job.sp.cut_type:
-            template_dir = f'{PROJECT_FILES_DIR}/{XYZ_DIR}/slab_template/CUT'
-
-        elif 'PME' in job.sp.cut_type:
-            template_dir = f'{PROJECT_FILES_DIR}/{XYZ_DIR}/slab_template/PME'
+        template_dir = f'{PROJECT_FILES_DIR}/{XYZ_DIR}/slab_template/CUT'
 
         shutil.copy(f'{template_dir}/{names.NAME_INPUT_TEMPLATE_SLAB}.trr', '.')
         shutil.copy(f'{template_dir}/{names.NAME_INPUT_TEMPLATE_SLAB}.tpr', '.')
@@ -180,6 +163,7 @@ def BUILD_INPUT_FROM_TEMPLATE(job):
 
         job_templates.build_slab_from_template(job, template_file_trr=f'{names.NAME_INPUT_TEMPLATE_SLAB}.trr', template_file_tpr=f'{names.NAME_INPUT_TEMPLATE_SLAB}.tpr',
                                                template_file_mdp=f'{names.NAME_INPUT_TEMPLATE_SLAB}.mdp', output_name=f'{names.NAME_ELONGATED}.gro',pick_randomTrue_pick_allFalse=True)
+
         
 
 ###################################################################################################
@@ -371,7 +355,7 @@ def GRAPH_AND_COLLECT_PROPERTIES(job):
         liq_dens = col2.max()
         
         aggregate_densFile = open(f"../../{names.DENS_GLOBAL_DATA}.txt",'a')
-        aggregate_densFile.write(f"{job.id:<42} {job.sp.r_cut:<8} {job.sp.cut_type:<8} {job.sp.replicas:<8} TEMP{job.sp.temperature:<8}"
+        aggregate_densFile.write(f"{job.id:<42} {job.sp.surfact_count:<8} {job.sp.statepoint_bkup_0:<8} {job.sp.statepoint_bkup_1:<8} {job.sp.statepoint_bkup_2:<8} {job.sp.statepoint_bkup_3:<8}"
                                     f" \t\t {liq_dens:<9}"
                                     f" \t\t {gas_dens:<9}"
                                    "\n")
@@ -403,7 +387,7 @@ def GRAPH_AND_COLLECT_PROPERTIES(job):
                                     
             # read Dummy_GMX_output write to aggregate_surTenFile
             
-        aggregate_surTenFile.write(f"{job.id:<42} {job.sp.r_cut:<8} {job.sp.cut_type:<8} {job.sp.replicas:<8} TEMP{job.sp.temperature:<8}"
+        aggregate_surTenFile.write(f"{job.id:<42} {job.sp.surfact_count:<8} {job.sp.statepoint_bkup_0:<8} {job.sp.statepoint_bkup_1:<8} {job.sp.statepoint_bkup_2:<8} {job.sp.statepoint_bkup_3:<8}"
                                    f" {properties_of_interest_storage_dict[properties_of_interest[0]]:<42} " 
                                    f" {properties_of_interest_storage_dict[properties_of_interest[1]]:<42} " 
                                    f" {properties_of_interest_storage_dict[properties_of_interest[2]]:<42} " 

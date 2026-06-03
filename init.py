@@ -3,27 +3,30 @@ import os
 
 project = signac.init_project()
 
-r_cut = [0.8, 1.4, 2.0]
-cut_type = ['Cut-off', 'PME'] 
-temperature = [550]
-replicas = [0] 
+# Statepoint parameters
+surfact_count = [0]
+statepoint_bkup_0 = [0]
+statepoint_bkup_1 = [0]
+statepoint_bkup_2 = [0]
+statepoint_bkup_3 = [0]
 
 # Set up statepoints
 total_statepoints = []
 
-for rc in r_cut:
-    for ct in cut_type:
-        for rep in replicas:
-            for temp in temperature:
-                # Include Cut-off for all r_cut, but PME only for r_cut = 1.4
-                if rc == 1.4 or "Cut-off" in ct:
+for sc in surfact_count:
+    for b0 in statepoint_bkup_0:
+        for b1 in statepoint_bkup_1:
+            for b2 in statepoint_bkup_2:
+                for b3 in statepoint_bkup_3:
                     statepoint = {
-                        "r_cut": rc,
-                        "cut_type": ct,
-                        "replicas": rep,
-                        "temperature": temp
+                        "surfact_count": sc,
+                        "statepoint_bkup_0": b0,
+                        "statepoint_bkup_1": b1,
+                        "statepoint_bkup_2": b2,
+                        "statepoint_bkup_3": b3
                     }
                     total_statepoints.append(statepoint)
+
 
 with open('legend.txt', 'w') as legend:
     legend.write('job_id \t\t\t\t\t\t statepoint\n')

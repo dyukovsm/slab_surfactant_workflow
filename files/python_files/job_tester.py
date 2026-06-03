@@ -105,18 +105,12 @@ def look_in_file(job,file_list,look_string,debug=False,check_for_not=False,check
     return test_passed
 
 def run_only_one(job):
-    test_passed = False
-    if job.sp.replica < 1:
-        test_passed = True
-    return test_passed
+    return True
 
 
 def important_jobs(job):
-    test_passed = False
-    if job.sp.r_cut < 6.0:
-        #if 'PME' in job.sp.cut_type:
-            test_passed = True
-    return test_passed
+    return True
+
 
 ############################__JOB_SPECIFIC_FUNCTIONS__############################
 
